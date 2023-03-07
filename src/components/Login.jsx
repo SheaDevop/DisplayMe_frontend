@@ -3,24 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider, GoogleLogin, googleLogout } from '@react-oauth/google';
 import shareVideo from '../assets/share.mp4';
 import logo from '../assets/logowhite.png';
+import jwt_decode from 'jwt-decode';
+import { client } from '../client';
 
 const Login = () => {
   const user = false;
+  const navigate = useNavigate();
   const responseGoogle = (response) => {
-    localStorage.setItem('user', JSON.stringify(response.Object))
+    const decoded = jwt_decode(response.credential)
+    localStorage.setItem('user', JSON.stringify(decoded))
     
-    const { name, googleId, imageUrl } = response.Object
+    const { name, sub, picture } = decoded
 
     const doc = {
-      _id: googleId,
+      _id: sub,
       _type: 'user',
       userName: name,
-      image: imageUrl,
+      image: picture,
     }
+
+    client.createIfNotExists(doc)
+      .then(() => {
+        navigate('/', { replace: true })
+      })
   }
 
   return (
-    <GoogleOAuthProvider clientId='7139633976-vfbbcop7p2fq6rsb7enhsoc0m2m0jbc9.apps.googleusercontent.com'>
+    <GoogleOAuthProvider clientId={`${process.env.REACT_APP_GOOGLE_API_TOKEN}`}>
       <div className=' flex justify-start items-center flex-col h-screen'>
       <div className='relative w-full h-full'>
         <video 
